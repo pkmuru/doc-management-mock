@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { AIIcon } from "./icons"
 import { LoadingSpinner } from "./loading-spinner"
@@ -102,19 +104,36 @@ export function AISuggestionCard({ onApplySuggestion, isLoading = false }: AISug
     setIsApplying(false)
   }
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      if (!isLoading && !isApplying) {
+        handleApplySuggestion()
+      }
+    }
+  }
+
   return (
     <div
       className={`ai-suggestion-card ${isApplying ? "applying" : ""}`}
+      role="button"
+      tabIndex={isLoading || isApplying ? -1 : 0}
       onClick={!isLoading && !isApplying ? handleApplySuggestion : undefined}
+      onKeyDown={handleKeyDown}
+      aria-label={`AI Suggestion: ${suggestion.title}. ${suggestion.description} Click to apply search for ${suggestion.searchTerm} with ${suggestion.typeFilters.length} filter${suggestion.typeFilters.length > 1 ? "s" : ""}`}
+      aria-describedby="ai-suggestion-details"
+      aria-disabled={isLoading || isApplying}
     >
       <div className="ai-suggestion-header">
-        <div className="ai-suggestion-icon">
+        <div className="ai-suggestion-icon" aria-hidden="true">
           <AIIcon size={16} className="ai-icon" />
         </div>
-        <div className="ai-suggestion-badge">AI Suggestion</div>
+        <div className="ai-suggestion-badge" aria-hidden="true">
+          AI Suggestion
+        </div>
       </div>
 
-      <div className="ai-suggestion-content">
+      <div className="ai-suggestion-content" aria-hidden="true">
         <h3 className="ai-suggestion-title">{suggestion.title}</h3>
         <p className="ai-suggestion-description">{suggestion.description}</p>
 
@@ -127,7 +146,7 @@ export function AISuggestionCard({ onApplySuggestion, isLoading = false }: AISug
         </div>
       </div>
 
-      <div className="ai-suggestion-action">
+      <div className="ai-suggestion-action" aria-hidden="true">
         {isApplying ? (
           <div className="ai-suggestion-loading">
             <LoadingSpinner size={14} />
@@ -138,6 +157,11 @@ export function AISuggestionCard({ onApplySuggestion, isLoading = false }: AISug
             <span>Click to apply</span>
           </div>
         )}
+      </div>
+
+      <div id="ai-suggestion-details" className="sr-only">
+        AI-powered suggestion for {suggestion.category.toLowerCase()} documents. Will search for "
+        {suggestion.searchTerm}" and filter by {suggestion.typeFilters.join(", ")}.
       </div>
     </div>
   )

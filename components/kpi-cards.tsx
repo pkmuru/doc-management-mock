@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { LoadingSpinner } from "./loading-spinner"
 import { KpiSkeleton } from "./skeleton-loader"
 import { AISuggestionCard } from "./ai-suggestion-card"
@@ -38,9 +40,16 @@ interface KpiCardProps {
 
 function KpiCard({ title, value, isLoading = false }: KpiCardProps) {
   return (
-    <div className="kpi-card">
-      <h3>{title}</h3>
-      <div className="kpi-value">{isLoading ? <LoadingSpinner size={24} /> : value}</div>
+    <div className="kpi-card" role="region" aria-labelledby={`kpi-${title.toLowerCase().replace(/\s+/g, "-")}`}>
+      <h3 id={`kpi-${title.toLowerCase().replace(/\s+/g, "-")}`}>{title}</h3>
+      <div
+        className="kpi-value"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-label={isLoading ? `Loading ${title.toLowerCase()}` : `${value} ${title.toLowerCase()}`}
+      >
+        {isLoading ? <LoadingSpinner size={24} /> : value}
+      </div>
     </div>
   )
 }
@@ -52,29 +61,45 @@ interface RecentlyViewedCardProps {
 }
 
 function RecentlyViewedCard({ documents, isLoading = false, onViewDocument }: RecentlyViewedCardProps) {
+  const handleKeyDown = (event: React.KeyboardEvent, document: Document) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      onViewDocument(document)
+    }
+  }
+
   return (
-    <div className="kpi-card recently-viewed-card">
-      <h3>Recently Viewed</h3>
+    <div className="kpi-card recently-viewed-card" role="region" aria-labelledby="recently-viewed-title">
+      <h3 id="recently-viewed-title">Recently Viewed</h3>
       {isLoading ? (
-        <div className="kpi-value">
+        <div className="kpi-value" aria-live="polite" aria-label="Loading recently viewed documents">
           <LoadingSpinner size={24} />
         </div>
       ) : (
-        <div className="recently-viewed-list">
+        <div className="recently-viewed-list" role="list" aria-label="Recently viewed documents">
           {documents.length === 0 ? (
-            <div className="no-recent-documents">
+            <div className="no-recent-documents" role="status" aria-live="polite">
               <span className="no-recent-text">No recent views</span>
             </div>
           ) : (
-            documents.map((document) => (
+            documents.map((document, index) => (
               <div
                 key={document.id}
                 className="recent-document-item clickable"
+                role="listitem"
+                tabIndex={0}
                 onClick={() => onViewDocument(document)}
-                title={`Click to view: ${document.name}`}
+                onKeyDown={(e) => handleKeyDown(e, document)}
+                aria-label={`View document: ${document.name}`}
+                aria-describedby={`recent-doc-${index}-desc`}
               >
-                <PdfIcon size={12} className="recent-document-icon" />
-                <span className="recent-document-name">{document.name}</span>
+                <PdfIcon size={12} className="recent-document-icon" aria-hidden="true" />
+                <span className="recent-document-name" aria-hidden="true">
+                  {document.name}
+                </span>
+                <span id={`recent-doc-${index}-desc`} className="sr-only">
+                  PDF document, click to view
+                </span>
               </div>
             ))
           )}
@@ -108,32 +133,46 @@ function RecentlyUploadedCard({ documents, isLoading = false, onViewDocument }: 
     })
   }
 
+  const handleKeyDown = (event: React.KeyboardEvent, document: Document) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      onViewDocument(document)
+    }
+  }
+
   return (
-    <div className="kpi-card recently-uploaded-card">
-      <h3>Recently Uploaded</h3>
+    <div className="kpi-card recently-uploaded-card" role="region" aria-labelledby="recently-uploaded-title">
+      <h3 id="recently-uploaded-title">Recently Uploaded</h3>
       {isLoading ? (
-        <div className="kpi-value">
+        <div className="kpi-value" aria-live="polite" aria-label="Loading recently uploaded documents">
           <LoadingSpinner size={24} />
         </div>
       ) : (
-        <div className="recently-uploaded-list">
+        <div className="recently-uploaded-list" role="list" aria-label="Recently uploaded documents">
           {documents.length === 0 ? (
-            <div className="no-recent-documents">
+            <div className="no-recent-documents" role="status" aria-live="polite">
               <span className="no-recent-text">No recent uploads</span>
             </div>
           ) : (
-            documents.map((document) => (
+            documents.map((document, index) => (
               <div
                 key={document.id}
                 className="recent-document-item clickable"
+                role="listitem"
+                tabIndex={0}
                 onClick={() => onViewDocument(document)}
-                title={`Click to view: ${document.name} (uploaded ${formatUploadDate(document.uploadedDate)})`}
+                onKeyDown={(e) => handleKeyDown(e, document)}
+                aria-label={`View document: ${document.name}, uploaded ${formatUploadDate(document.uploadedDate)}`}
+                aria-describedby={`upload-doc-${index}-desc`}
               >
-                <PdfIcon size={12} className="recent-document-icon" />
-                <div className="recent-document-content">
+                <PdfIcon size={12} className="recent-document-icon" aria-hidden="true" />
+                <div className="recent-document-content" aria-hidden="true">
                   <span className="recent-document-name">{document.name}</span>
                   <span className="recent-document-date">{formatUploadDate(document.uploadedDate)}</span>
                 </div>
+                <span id={`upload-doc-${index}-desc`} className="sr-only">
+                  PDF document uploaded {formatUploadDate(document.uploadedDate)}, click to view
+                </span>
               </div>
             ))
           )}
@@ -153,9 +192,9 @@ export function KpiCards({
 }: KpiCardsProps) {
   if (isLoading) {
     return (
-      <div className="kpi-skeleton-container">
+      <div className="kpi-skeleton-container" role="region" aria-label="Loading dashboard statistics">
         <KpiSkeleton />
-        <div className="ai-suggestion-skeleton">
+        <div className="ai-suggestion-skeleton" aria-label="Loading AI suggestions">
           <div className="skeleton-item skeleton-ai-header"></div>
           <div className="skeleton-item skeleton-ai-title"></div>
           <div className="skeleton-item skeleton-ai-description"></div>
@@ -169,7 +208,10 @@ export function KpiCards({
   }
 
   return (
-    <section className="kpi-section">
+    <section className="kpi-section" role="region" aria-labelledby="dashboard-stats">
+      <h2 id="dashboard-stats" className="sr-only">
+        Dashboard Statistics
+      </h2>
       <KpiCard title="Total Documents" value={kpiData.totalDocuments} />
       <RecentlyViewedCard documents={recentlyViewedDocuments} isLoading={isLoading} onViewDocument={onViewDocument} />
       <RecentlyUploadedCard
